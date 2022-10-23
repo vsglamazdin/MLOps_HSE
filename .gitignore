@@ -1,0 +1,4 @@
+*cache*
+/api_modules/fitted_models/
+/tests/
+.idea/
