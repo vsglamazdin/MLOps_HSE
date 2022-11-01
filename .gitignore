@@ -1,4 +1,5 @@
 *cache*
-/api_modules/fitted_models/
+/fitted_models/
+/catboost_info
 /tests/
 .idea/

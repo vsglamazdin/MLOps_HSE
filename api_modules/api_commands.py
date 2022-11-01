@@ -7,19 +7,26 @@ app = Flask(__name__)
 api = Api(app)
 
 
-def get_response(answer: list):
+def get_response(answer: dict):
     """
-    Возвращает конструкцию
-    :param answer: Ответ
-    :return: Возвращает конструкцию
+    Формирует response
+    :param answer: Ответ со статусом
+    :return: Возвращает response
     """
-    json_ans = {
-        'result': answer,
-        'error': [],
-        'success': True
-    }
+    if answer['code'] in [200, 201]:
+        json_ans = {
+            'result': answer['result'],
+            'success': True,
+            'error': []
+        }
+    else:
+        json_ans = {
+            'result': [],
+            'success': False,
+            'error': answer['result']
+        }
     response = jsonify(json_ans)
-    # response.status_code = 200
+    response.status_code = answer['code']
     return response
 
 
@@ -54,10 +61,8 @@ class FittedModels(Resource):
     @api.expect(fit_parser)
     def post(self):
         req_args = fit_parser.parse_args()
-        print(req_args.params)
-        params = json.loads(req_args.params)
         return get_response(
-            fit(req_args.model_name, params,
+            fit(req_args.model_name, json.loads(req_args.params),
                 req_args.X, req_args.y)
         )
 

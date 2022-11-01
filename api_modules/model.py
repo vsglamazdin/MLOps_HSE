@@ -9,22 +9,28 @@ fitted_models_pathname = 'fitted_models'
 if not os.path.exists(fitted_models_pathname):
     os.makedirs(fitted_models_pathname)
 
+
 def eval_data(data: list) -> list:
     """
-    Преобразует элемента списка из строк в нужное
+    Преобразует элементы списка из строк в нужное
     :param data: Список, элементы которого надо преобразовать
     :return: Список с преобразованными элементами
     """
     return [eval(elem) for elem in data]
 
-def available_model_types() -> list:
+
+def available_model_types() -> dict:
     """
     Возвращает список доступных для обучения моделей
     :return: Список доступных для обучения моделей
     """
-    return ['Ridge', 'RandomForestRegressor', 'CatBoostRegressor']
+    return {
+        'result': ['Ridge', 'RandomForestRegressor', 'CatBoostRegressor'],
+        'code': 200
+    }
 
-def fit(model_name: str, params: dict, X: list, y: list) -> list:
+
+def fit(model_name: str, params: dict, X: list, y: list) -> dict:
     """
     Обучает модель
     :param model_name: Тип модели
@@ -36,27 +42,46 @@ def fit(model_name: str, params: dict, X: list, y: list) -> list:
     if model_name in available_model_types():
         try:
             model = eval(model_name)(**params)
+            model.fit(np.array(eval_data(X)), np.array(eval_data(y)))
         except TypeError:
-            return [f'Model {model_name} got an unexpected params']
-        model.fit(np.array(eval_data(X)), np.array(eval_data(y)))
+            return {
+                'result': f'Model {model_name} got an unexpected params',
+                'code': 400
+            }
+        except Exception as e:
+            return {
+                'result': e.__str__(),
+                'code': 400
+            }
         filename_params = ', '.join([
             f'{param}={params[param]}' for param in params.keys()]
         )
         filename = f'{model_name}({filename_params})'
         joblib.dump(model, f'./{fitted_models_pathname}/{filename}.pkl')
-        return [f'Model successfully fitted and saved with name {filename}']
+        return {
+            'result': f'''Model successfully fitted and saved 
+            with name {filename}''',
+            'code': 201
+        }
     else:
-        return [f'Model {model_name} is not available to fit']
+        return {
+            'result': f'Model {model_name} is not available to fit',
+            'code': 404
+        }
 
 
-def available_fitted_models() -> list:
+def available_fitted_models() -> dict:
     """
     Возвращает список обученных моделей
     :return: Список обученных моделей
     """
-    return [m[:-4] for m in os.listdir(f'./{fitted_models_pathname}/')]
+    return {
+        'result': [m[:-4] for m in os.listdir(f'./{fitted_models_pathname}/')],
+        'code': 200
+    }
 
-def delete(model_name: str) -> list:
+
+def delete(model_name: str) -> dict:
     """
     Удаляет обученную модель
     :param model_name: Имя обученной модели
@@ -65,11 +90,18 @@ def delete(model_name: str) -> list:
     filename = f'./{fitted_models_pathname}/{model_name}.pkl'
     if os.path.exists(filename):
         os.remove(filename)
-        return [f'Model {model_name} successfully deleted']
+        return {
+            'result': f'Model {model_name} successfully deleted',
+            'code': 200
+        }
     else:
-        return [f'Model {model_name} is not in fitted']
+        return {
+            'result': f'Model {model_name} is not in fitted',
+            'code': 404
+        }
 
-def predict(model_name: str, X: list) -> list:
+
+def predict(model_name: str, X: list) -> dict:
     """
     Предсказание моделью
     :param model_name: Имя обученной модели
@@ -78,6 +110,18 @@ def predict(model_name: str, X: list) -> list:
     """
     try:
         model = joblib.load(f'./{fitted_models_pathname}/{model_name}.pkl')
+        prediction = model.predict(np.array(eval_data(X))).tolist()
     except FileNotFoundError:
-        return [f'Model {model_name} is not fitted']
-    return model.predict(np.array(eval_data(X))).tolist()
+        return {
+            'result': f'Model {model_name} is not fitted',
+            'code': 404
+        }
+    except Exception as e:
+        return {
+            'result': e.__str__(),
+            'code': 400
+        }
+    return {
+        'result': prediction,
+        'code': 200
+    }
