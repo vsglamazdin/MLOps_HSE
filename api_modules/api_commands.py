@@ -30,7 +30,11 @@ def get_response(answer: dict):
     return response
 
 
-@api.route('/available_model_types')
+@api.route(
+    '/available_model_types',
+    methods=['GET'],
+    doc={'description': 'You can get available model types for training'}
+)
 class AvailableModelTypes(Resource):
     """
     Доступные для обучения модели
@@ -50,7 +54,11 @@ delete_parser = reqparse.RequestParser()
 delete_parser.add_argument('model_name', help='Name of fitted model to delete')
 
 
-@api.route('/fitted_models')
+@api.route(
+    '/fitted_models',
+    methods=['POST', 'GET', 'DELETE'],
+    doc={'description': 'You can fit model, get or delete fitted models'}
+)
 class FittedModels(Resource):
     """
     Работа с обученными моделями:
@@ -58,6 +66,14 @@ class FittedModels(Resource):
         - получение списка обученных;
         - удаление обученной.
     """
+    @api.doc(
+        params={
+            'model_name': 'Type of model to fit',
+            'params': 'Hyperparameters to fit the model',
+            'X': 'Features',
+            'y': 'Target'
+        }
+    )
     @api.expect(fit_parser)
     def post(self):
         req_args = fit_parser.parse_args()
@@ -70,6 +86,7 @@ class FittedModels(Resource):
     def get():
         return get_response(available_fitted_models())
 
+    @api.doc(params={'model_name': 'Name of fitted model to delete'})
     @api.expect(delete_parser)
     def delete(self):
         req_args = delete_parser.parse_args()
@@ -81,11 +98,21 @@ predict_parser.add_argument('model_name', help='Name of fitted model')
 predict_parser.add_argument('X', action='append', help='Features')
 
 
-@api.route('/prediction')
+@api.route(
+    '/prediction',
+    methods=['POST'],
+    doc={'description': 'You can make prediction with fitted model'}
+)
 class Prediction(Resource):
     """
     Получение предсказания
     """
+    @api.doc(
+        params={
+            'model_name': 'Name of fitted model',
+            'X': 'Features'
+        }
+    )
     @api.expect(predict_parser)
     def post(self):
         req_args = predict_parser.parse_args()
